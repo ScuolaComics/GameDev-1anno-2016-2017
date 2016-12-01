@@ -1,15 +1,16 @@
 #include <iostream>
-#include <ctime>
 
 using namespace std;
 
 #define GRID_WIDTH 10
 #define GRID_HEIGHT 10
 
+#define SEED 7
+
 int main()
 {
-    // seed per il generatore randomico (versione non deterministica)
-    srand(static_cast<unsigned int>(time(0)));
+    // seed per il generatore randomico (versione deterministica)
+    srand(static_cast<unsigned int>(SEED));
     
     bool game = true;
 
@@ -84,7 +85,6 @@ int main()
             }
         }
         while (invalidInput);
-        
     }
 
     return 0;

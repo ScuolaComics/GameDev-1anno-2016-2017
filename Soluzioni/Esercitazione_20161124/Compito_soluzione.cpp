@@ -1,339 +1,335 @@
 #include <iostream>
 #include <string>
-#include <vector>
-#include <cstdlib>      // std::rand, std::srand
-#include <algorithm>
 
 using namespace std;
 
-#define SEED 7
+#define BOARD_SIDE 3
 
-#define DUNGEON_WIDTH 5
-#define DUNGEON_HEIGHT 5
+#define RANDOM_SEED 9
 
-#define NUMBER_OF_FOES 3
-#define NUMBER_OF_BLOCKS 3
-
-enum eCell
+enum OpponentIA
 {
-    EMPTY = 0,
-    FOE = 5,
-    HERO = 7,
-    BLOCK = 6,
-    TRESURE = 1
+    eOpponentIAEasy,
+    eOpponentIAHard,
 };
 
-enum eGameState
+enum GameState
 {
-    RUNNING,
-    DEFEAT,
-    VICTORY
+    eRunning,
+    eVictory,
+    eTie,
+    eDefeat,
 };
 
-typedef vector<eCell> DungeonColumn;
-typedef vector<DungeonColumn> Dungeon;
+enum CellValue
+{
+    eEmpty,
+    ePlayer,
+    eOpponent
+};
 
-void printDungeon(const Dungeon& dungeon);
+void clearBoard();
+void printBoard();
+void resolvePlayerRound();
+void resolveCPURound();
+GameState getGameState();
+void resolveGameEnd();
 
-void initDungeon(Dungeon& dungeon);
+CellValue _board[BOARD_SIDE][BOARD_SIDE];
 
-eGameState playerMove(Dungeon& dungeon);
-eGameState foesMove(Dungeon& dungeon);
-
-int randomNumberGenerator(int i);
+GameState _gameState = eRunning;
+OpponentIA _currentIA = eOpponentIAEasy;
 
 int main()
 {
-    srand(SEED);
+    _currentIA = eOpponentIAEasy;
+    _gameState = eRunning;
 
-    Dungeon dungeon;
+    bool playerRound = true;
 
-    eGameState gameState = RUNNING;
+    srand(RANDOM_SEED);
 
-    while(RUNNING == gameState)
+    while (_gameState == eRunning)
     {
-        initDungeon(dungeon);
-        
+        clearBoard();
+        printBoard();
 
-        while(RUNNING == gameState)
+        while (_gameState == eRunning)
         {
-            printDungeon(dungeon);
-
-            gameState = playerMove(dungeon);
-            if (RUNNING == gameState)
+            if (playerRound)
             {
-                gameState = foesMove(dungeon);
+                resolvePlayerRound();
+                playerRound = false;
             }
+            else
+            {
+                resolveCPURound();
+                playerRound = true;
+            }
+            printBoard();
+            _gameState = getGameState();
         }
 
-        if (VICTORY == gameState)
-        {
-            cout << "Congratulazioni! Hai preso il tesoro!" << endl;
-        }
-        else if (DEFEAT == gameState)
-        {
-            cout << "Peccato! Hai perso..." << endl;
-        }
-
-        int restart = -1;
-        cout << "Vuoi ricominciare? (si = 1): ";
-        cin >> restart;
-
-        if (1 == restart)
-        {
-            gameState = RUNNING;
-        }
+        resolveGameEnd();
     }
 
     return 0;
 }
 
-void printDungeon(const Dungeon& dungeon)
+void clearBoard()
+{
+    for (int i = 0; i < BOARD_SIDE; ++i)
+    {
+        for (int j = 0; j < BOARD_SIDE; ++j)
+        {
+            _board[i][j] = eEmpty;
+        }
+    }
+}
+
+void printBoard()
 {
     cout << endl;
-    // Stampo le righe al contrario perché voglio che la coordinata Y = 0 sia in basso 
-    for (int y = DUNGEON_HEIGHT - 1; y >= 0; --y)
+
+    // Conto le righe al contrario perché voglio che le coordinate 0,0 siano in basso a sinistra
+    for (int j = BOARD_SIDE - 1; j >= 0; --j)
     {
-        for (int x = 0; x < DUNGEON_WIDTH; ++x)
+
+        for (int i = 0; i < BOARD_SIDE; ++i)
         {
-            cout << dungeon[x][y] << " ";
+            char cellSymbol = ' ';
+            switch (_board[i][j])
+            {
+                case ePlayer:
+                    cellSymbol = 'X';
+                    break;
+                case eOpponent:
+                    cellSymbol = '0';
+                    break;
+                default:
+                    cellSymbol = ' ';
+                    break;
+            } 
+            cout << " " << cellSymbol << " ";
+
+            // Il controllo serve per non stampare le linee verticali anche dopo l'ultima colonna
+            if (i < BOARD_SIDE - 1)
+            {
+                cout << "|";
+            }
         }
         cout << endl;
+
+        // Il controllo serve per non stampare le linee orizzontali anche dopo l'ultima riga
+        if (j > 0)
+        {
+            for (int i = 0; i < BOARD_SIDE; ++i)
+            {
+                cout << "--- ";
+            }
+            cout << endl;
+        }
     }
     cout << endl;
 }
 
-void initDungeon(Dungeon& dungeon)
+void resolvePlayerRound()
 {
-    dungeon.clear();
+    bool invalidInput = false;
+    int inputX = -1;
+    int inputY = -1;
 
-    for (int x = 0; x < DUNGEON_WIDTH; ++x)
-    {
-        DungeonColumn  column;
-        for (int y = 0; y < DUNGEON_HEIGHT; ++y)
-        {
-            column.push_back(EMPTY);
-        }
-        dungeon.push_back(column);
-    }
-
-    int posX = 0;
-    int posY = 0;
-
-    // Posiziono l'eroe
     do
     {
-        posX = rand() % DUNGEON_WIDTH;
-        posY = rand() % DUNGEON_HEIGHT;
-    }
-    while(EMPTY != dungeon[posX][posY]);
-    dungeon[posX][posY] = HERO;
+        cout << "E' il tuo turno" << endl;
 
-    // Posiziono il tesoro
-    do
-    {
-        posX = rand() % DUNGEON_WIDTH;
-        posY = rand() % DUNGEON_HEIGHT;
-    }
-    while(EMPTY != dungeon[posX][posY]);
-    dungeon[posX][posY] = TRESURE;
-
-    // Posiziono i nemici
-    for (int i = 0; i < NUMBER_OF_FOES; ++i)
-    {
-        do
+        do 
         {
-            posX = rand() % DUNGEON_WIDTH;
-            posY = rand() % DUNGEON_HEIGHT;
+            cout << "Digita la coordinata X:";
+            cin >> inputX;
         }
-        while(EMPTY != dungeon[posX][posY]);
-        dungeon[posX][posY] = FOE;
-    }
+        while(inputX < 0 || BOARD_SIDE < inputX);
 
-    // Posiziono i blocchi
-    for (int i = 0; i < NUMBER_OF_BLOCKS; ++i)
-    {
-        do
+        do 
         {
-            posX = rand() % DUNGEON_WIDTH;
-            posY = rand() % DUNGEON_HEIGHT;
+            cout << "Digita la coordinata Y:";
+            cin >> inputY;
         }
-        while(EMPTY != dungeon[posX][posY]);
-        dungeon[posX][posY] = BLOCK;
+        while(inputY < 0 || BOARD_SIDE < inputY);
     }
+    while (ePlayer == _board[inputX][inputY] || eOpponent == _board[inputX][inputY]);
+
+    _board[inputX][inputY] = ePlayer;
 }
 
-eGameState playerMove(Dungeon& dungeon)
+void resolveCPURound()
 {
-    eGameState newState = RUNNING;
+    int posX = -1;
+    int posY = -1;
 
-    cout << "Dove vuoi andare (1 = destra, 2 = sinistra, 3 = su, 4 = giù):";
+    cout << "E' il turno del tuo avversario" << endl;
 
-    // Ottengo la scelta del giocatore
+    if (_currentIA == eOpponentIAHard)
+    {
+        // Per ciascuna cella vuota, simulo che il giocatore la scelga al prossimo turno.
+        // Se la scelta si traduce in una vittoria del giocatore, allora sarà la scelta per la CPU.
+        for (int i = 0; i < BOARD_SIDE; ++i)
+        {
+            for (int j = 0; j < BOARD_SIDE; ++j)
+            {
+                if (0 == _board[i][j])
+                {
+                    _board[i][j] = ePlayer;
+                    if (eVictory == getGameState())
+                    {
+                        posX = i;
+                        posY = j;
+                    }
+                    _board[i][j] = eEmpty;
+                }
+            }
+        }
+    }
+
+    if (-1 == posX || -1 == posY)
+    {
+        do
+        {
+            posX = rand() % BOARD_SIDE;
+            posY = rand() % BOARD_SIDE;
+        }
+        while (ePlayer == _board[posX][posY] || eOpponent == _board[posX][posY]);
+    }
+
+    _board[posX][posY] = eOpponent;
+}
+
+GameState getGameState()
+{
+    // Controllo le colonne
+    for (int i = 0; i < BOARD_SIDE; ++i)
+    {
+        if (_board[i][0] == _board[i][1] && _board[i][1] == _board[i][2])
+        {
+            if (ePlayer == _board[i][0])
+            {
+                return eVictory;
+            }
+            else if (eOpponent == _board[i][0])
+            {
+                return eDefeat;
+            }
+            
+        }
+    }
+
+    // Controllo le righe
+    for (int j = 0; j < BOARD_SIDE; ++j)
+    {
+        if (_board[0][j] == _board[1][j] && _board[1][j] == _board[2][j])
+        {
+            if (ePlayer == _board[0][j])
+            {
+                return eVictory;
+            }
+            else if (eOpponent == _board[0][j])
+            {
+                return eDefeat;
+            }
+            
+        }
+    }
+
+    // Controllo le diagonali
+    if (_board[0][0] == _board[1][1] && _board[1][1] == _board[2][2])
+    {
+        if (ePlayer == _board[1][1])
+        {
+            return eVictory;
+        }
+        else if (eOpponent == _board[1][1])
+        {
+            return eDefeat;
+        }
+    }
+    if (_board[0][2] == _board[1][1] && _board[1][1] == _board[2][0])
+    {
+        if (ePlayer == _board[1][1])
+        {
+            return eVictory;
+        }
+        else if (eOpponent == _board[1][1])
+        {
+            return eDefeat;
+        }
+    }
+
+    // Controllo il pareggio
+    bool tie = true;
+    for (int i = 0; i < BOARD_SIDE; ++i)
+    {
+        for (int j = 0; j < BOARD_SIDE; ++j)
+        {
+            if (0 == _board[i][j])
+            {
+                tie = false;
+            }
+        }
+    }
+    if (tie)
+    {
+        return eTie;
+    }
+
+    return eRunning;
+}
+
+void resolveGameEnd()
+{
     int input = -1;
-    do
+    switch (_gameState)
     {
-        cin >> input;
-    }
-    while(input < 1 || 4 < input);
-
-    // Individuo le coordinate dell'eroe
-    int heroX = -1;
-    int heroY = -1;
-
-    for (int x = 0; x < DUNGEON_WIDTH; ++x)
-    {
-        for (int y = 0; y < DUNGEON_HEIGHT; ++y)
+        case eVictory:
         {
-            if (HERO == dungeon[x][y])
+            switch (_currentIA)
             {
-                heroX = x;
-                heroY = y;
-            }
-        }
-    }
-
-    // Calcolo la destinazione in base all'input del giocatore
-    int destinationX = heroX;
-    int destinationY = heroY;
-
-    switch (input)
-    {
-        case 1:
-            destinationX++;
-            break;
-        case 2:
-            destinationX--;
-            break;
-        case 3:
-            destinationY++;
-            break;
-        case 4:
-            destinationY--;
-            break;
-        default:
-            break;
-    }
-
-    // Aggiorno la griglia e lo stato di gioco in base alla nuova posizione del giocatore
-    if (0 <= destinationX && destinationX < DUNGEON_WIDTH && 0 <= destinationY && destinationY < DUNGEON_HEIGHT && BLOCK != dungeon[destinationX][destinationY])
-    {
-        switch (dungeon[destinationX][destinationY])
-        {
-            case EMPTY:
-                dungeon[destinationX][destinationY] = HERO;
-                dungeon[heroX][heroY] = EMPTY;
-                break;
-            case FOE:
-                newState = DEFEAT;
-                break;
-            case TRESURE:
-                newState = VICTORY;
-                break;
-            default:
-                break;
-
-        }
-    }
-
-    return newState;
-}
-
-eGameState foesMove(Dungeon& dungeon)
-{
-    eGameState newState = RUNNING;
-
-    // Ottengo le posizioni dei nemici
-    vector<int> foesX;
-    vector<int> foesY;
-
-    for (int x = 0; x < DUNGEON_WIDTH; ++x)
-    {
-        for (int y = 0; y < DUNGEON_HEIGHT; ++y)
-        {
-            if (FOE == dungeon[x][y])
-            {
-                foesX.push_back(x);
-                foesY.push_back(y);
-            }
-        }
-    }
-
-    // Muovo tutti i nemici in base alle posizioni ricavate
-    for (int count = 0; count < foesX.size(); ++count)
-    {
-        int foeX = foesX[count];
-        int foeY = foesY[count];
-
-        int destinationX = foeX;
-        int destinationY = foeY;
-
-        vector<int> possibleMoves;
-        possibleMoves.push_back(1);
-        possibleMoves.push_back(2);
-        possibleMoves.push_back(3);
-        possibleMoves.push_back(4);
-        random_shuffle(possibleMoves.begin(), possibleMoves.end(), randomNumberGenerator);
-
-        // Tento lo spostamento in tutte le direzioni possibili
-        for (int i = 0; i < possibleMoves.size(); ++i)
-        {
-            int possibleDestinationX = foeX;
-            int possibleDestinationY = foeY;
-
-            switch (possibleMoves[i])
-            {
-                case 1:
-                    possibleDestinationX++;
+                case eOpponentIAEasy:
+                    cout << "Bravo! Ma questa era facile... Alla prossima sarà più difficile...";
                     break;
-                case 2:
-                    possibleDestinationX--;
-                    break;
-                case 3:
-                    possibleDestinationY++;
-                    break;
-                case 4:
-                    possibleDestinationY--;
+                case eOpponentIAHard:
+                    cout << "Congratulazioni! Sei un mago del tris!" << endl;
                     break;
                 default:
                     break;
             }
-
-            if (0 <= possibleDestinationX && possibleDestinationX < DUNGEON_WIDTH && 0 <= possibleDestinationY && possibleDestinationY < DUNGEON_HEIGHT 
-                && BLOCK != dungeon[possibleDestinationX][possibleDestinationY]
-                && TRESURE != dungeon[possibleDestinationX][possibleDestinationY]
-                && FOE != dungeon[possibleDestinationX][possibleDestinationY])
+            cout << "Per rigiocare, digitare '1'." << endl;
+            cin >> input;
+            if (1 == input)
             {
-                // Direzione valida! Assegno ed esco dal ciclo
-                destinationX = possibleDestinationX;
-                destinationY = possibleDestinationY;
-                break;
+                _currentIA = eOpponentIAHard;
+                _gameState = eRunning;
             }
-
-        }    
-
-        // Aggiorno la griglia e lo stato di gioco in base alla nuova posizione del nemico
-        switch (dungeon[destinationX][destinationY])
-        {
-            case EMPTY:
-                dungeon[destinationX][destinationY] = FOE;
-                dungeon[foeX][foeY] = EMPTY;
-                break;
-            case HERO:
-                newState = DEFEAT;
-                break;
-            default:
-                break;
-
+            break;
         }
+        case eTie:
+            cout << "Pareggio! Per rigiocare, digitare '1'." << endl;
+            cin >> input;
+            if (1 == input)
+            {
+                _gameState = eRunning;
+            }
+            break;
+        case eDefeat:
+        {
+            cout << "Peccato, hai perso. Per rigiocare, digitare '1'." << endl;
+            cin >> input;
+            if (1 == input)
+            {
+                _gameState = eRunning;
+            }
+            break;
+        }
+        default:
+            break;
     }
-
-    return newState;
 }
-
-int randomNumberGenerator(int i)
-{
-    return rand() % i;
-}
-
-
