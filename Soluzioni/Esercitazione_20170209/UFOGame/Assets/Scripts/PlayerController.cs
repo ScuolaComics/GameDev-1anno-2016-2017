@@ -12,12 +12,14 @@ public class PlayerController : MonoBehaviour
 
 	private Rigidbody2D _rb2D;
 	private int _count;
+	private bool _alive;
 
 	// Use this for initialization
 	void Start () 
 	{
 		_rb2D = this.gameObject.GetComponent<Rigidbody2D>();
 		_count = 0;
+		_alive = true;
 		Debug.Assert(countText != null);
 		countText.text = "Count: " + _count.ToString();
 		Debug.Assert(winText != null);
@@ -43,7 +45,7 @@ public class PlayerController : MonoBehaviour
 
 	void OnTriggerEnter2D(Collider2D other) 
 	{
-		if (other.CompareTag("PickUp"))
+		if (other.CompareTag("PickUp") && _alive)
 		{
 			other.gameObject.SetActive(false);
 			_count++;
@@ -58,6 +60,7 @@ public class PlayerController : MonoBehaviour
 		}
 		else if (other.CompareTag("Enemy"))
 		{
+			_alive = false;
 			Debug.Assert(loseText != null);
 			loseText.gameObject.SetActive(true);
 		}
