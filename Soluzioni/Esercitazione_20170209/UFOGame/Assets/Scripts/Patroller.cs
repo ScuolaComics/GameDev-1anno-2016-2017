@@ -9,6 +9,8 @@ public class Patroller : MonoBehaviour
 
 	public float _speed = 10.0f;
 
+	public bool _smoothMovement;
+
 	private Vector3 _initialPosition;
 	private Vector3 _destination;
 
@@ -32,6 +34,11 @@ public class Patroller : MonoBehaviour
 	{
 		float distanceCovered = (Time.time - _startTime) * _speed;
 		float fractionJourney = distanceCovered / _journeyLength;
+
+		if (_smoothMovement)
+		{
+			fractionJourney = Mathf.SmoothStep(0f, 1f, fractionJourney);
+		}
 
 		_patrolTranform.position = Vector3.Lerp(_initialPosition, _destination, fractionJourney);
 
