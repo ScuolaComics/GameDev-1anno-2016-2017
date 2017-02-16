@@ -53,5 +53,9 @@ public class PlayerController : MonoBehaviour
 				winText.gameObject.SetActive(true);
 			}
 		}
+		else if (other.CompareTag("Enemy"))
+		{
+			Debug.Log("Sei morto!");
+		}
 	}
 }
