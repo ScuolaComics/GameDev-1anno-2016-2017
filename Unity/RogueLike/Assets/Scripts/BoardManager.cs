@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 public class BoardManager : MonoBehaviour
 {
+	[Serializable]
 	public class Count
 	{
 		public int minimum;
@@ -59,7 +60,7 @@ public class BoardManager : MonoBehaviour
 			{
 				GameObject toInstantiate = this.floorTiles[Random.Range(0, this.floorTiles.Length)];
 
-				if (x == -1 || x == this.columns + 1 || y == -1 || y == this.rows + 1) 
+				if ( x == -1 || x == this.columns || y == -1 || y == this.rows ) 
 				{
 					toInstantiate = this.outerWallTiles[Random.Range(0, this.outerWallTiles.Length)];
 				}
