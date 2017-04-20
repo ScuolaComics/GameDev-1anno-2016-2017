@@ -52,19 +52,37 @@ public class GameManager : MonoBehaviour
 
 	private void InitGame ()
 	{
+		_doingSetup = true;
+
+		_levelImage = GameObject.Find ("LevelImage");
+		_levelText = GameObject.Find ("LevelText").GetComponent<Text> ();
+		_levelText.text = "Day " + _level;
+		_levelImage.SetActive (true);
+
+		Invoke ("HideLevelImage", this.levelStartDelay);
+
 		_enemies.Clear ();
 		_boardManager.SetupScene (_level);
 	}
 
+	private void HideLevelImage ()
+	{
+		_levelImage.SetActive (false);
+		_doingSetup = false;
+	}
+
 	public void GameOver ()
 	{
+		_levelText.text = "After " + _level + " days, you starved!";
+		_levelImage.SetActive (true);
+
 		this.enabled = false;
 	}
 	
 	// Update is called once per frame
 	void Update () 
 	{
-		if (this.playerTurn || _enemiesMoving) 
+		if (this.playerTurn || _enemiesMoving || _doingSetup) 
 		{
 			return;
 		}

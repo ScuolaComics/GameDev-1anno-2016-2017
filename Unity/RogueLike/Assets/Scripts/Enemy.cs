@@ -6,6 +6,9 @@ public class Enemy : MovingObject
 {
 	public int playerDamage;
 
+	public AudioClip enemyAttack1;
+	public AudioClip enemyAttack2;
+
 	private Animator _animator;
 	private Transform _target;
 	private bool _skipMove;
@@ -58,6 +61,8 @@ public class Enemy : MovingObject
 		{
 			hitPlayer.LoseFood (this.playerDamage);
 			_animator.SetTrigger ("EnemyAttack");
+
+			SoundManager.instance.RandomizeSfx (this.enemyAttack1, this.enemyAttack2);
 		}
 	}
 

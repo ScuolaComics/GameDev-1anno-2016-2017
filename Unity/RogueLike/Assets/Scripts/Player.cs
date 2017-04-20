@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Player : MovingObject
 {
@@ -9,6 +10,18 @@ public class Player : MovingObject
 	public int pointsPerFood = 10;
 	public int pointsPerSoda = 20;
 	public float restartLevelDelay = 1f;
+
+	public Text foodText;
+
+	public AudioClip moveSound1;
+	public AudioClip moveSound2;
+	public AudioClip eatSound1;
+	public AudioClip eatSound2;
+	public AudioClip drinkSound1;
+	public AudioClip drinkSound2;
+	public AudioClip chopSound1;
+	public AudioClip chopSound2;
+	public AudioClip gameOverSound;
 
 	private Animator _animator;
 	private int _food;
@@ -18,6 +31,7 @@ public class Player : MovingObject
 	{
 		_animator = GetComponent<Animator> ();
 		_food = GameManager.instance.playerFoodPoints;
+		this.foodText.text = "Food: " + _food;
 
 		base.Start ();
 	}
@@ -31,6 +45,8 @@ public class Player : MovingObject
 	{
 		if (_food <= 0) 
 		{
+			SoundManager.instance.PlaySingle (this.gameOverSound);
+			SoundManager.instance.musicSource.Stop ();
 			GameManager.instance.GameOver ();
 		}
 	}
@@ -40,6 +56,7 @@ public class Player : MovingObject
 		base.AttemptMove <T> (xDir, yDir);
 
 		_food--;
+		this.foodText.text = "Food: " + _food;
 
 		CheckIfGameOver ();
 
@@ -77,12 +94,13 @@ public class Player : MovingObject
 		{
 			hitWall.DamageWall (this.wallDamage);
 			_animator.SetTrigger ("PlayerChop");
+			SoundManager.instance.RandomizeSfx (this.chopSound1, this.chopSound2);
 		}
 	}
 
 	protected override void OnMove ()
 	{
-		// TODO Add Audio Effect
+		SoundManager.instance.RandomizeSfx (this.moveSound1, this.moveSound2);
 	}
 
 	private void Restart ()
@@ -100,11 +118,15 @@ public class Player : MovingObject
 		else if (other.CompareTag ("Food")) 
 		{
 			_food += this.pointsPerFood;
+			this.foodText.text = "+" + this.pointsPerFood + " Food: " + _food;
+			SoundManager.instance.RandomizeSfx (this.eatSound1, this.eatSound2);
 			other.gameObject.SetActive (false);
 		}
 		else if (other.CompareTag ("Soda")) 
 		{
 			_food += this.pointsPerSoda;
+			this.foodText.text = "+" + this.pointsPerSoda + " Food: " + _food;
+			SoundManager.instance.RandomizeSfx (this.drinkSound1, this.drinkSound2);
 			other.gameObject.SetActive (false);
 		}
 	}
@@ -113,6 +135,7 @@ public class Player : MovingObject
 	{
 		_animator.SetTrigger ("PlayerHit");
 		_food -= loss;
+		this.foodText.text = "-" + loss + " Food: " + _food;
 		CheckIfGameOver ();
 	}
 }

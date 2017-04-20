@@ -60,7 +60,7 @@ namespace Completed
         static public void CallbackInitialization()
         {
             //register the callback to be called everytime the scene is loaded
-            SceneManager.sceneLoaded += OnSceneLoaded;
+            // SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         //This is called each time a scene is loaded.
